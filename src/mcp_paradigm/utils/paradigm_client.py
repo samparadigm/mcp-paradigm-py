@@ -43,7 +43,7 @@ def _path_with_query(path: str, params: dict[str, Any] | None) -> str:
 
 
 class ParadigmClient:
-    """Async REST client for ``api.paradigm.co`` / ``api.test.paradigm.co``."""
+    """Async REST client for ``api.prod.paradigm.co`` / ``api.test.paradigm.co``."""
 
     def __init__(
         self,
