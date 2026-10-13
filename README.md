@@ -63,21 +63,12 @@ export PARADIGM_ENVIRONMENT="testnet"    # "prod" (default) or "testnet"
 To sign through a proxy that holds the signing key, set these two and leave
 `PARADIGM_SIGNING_KEY` unset:
 
-- `PARADIGM_SIGNER_HEADER`: the header the server puts each signing message in,
-  base64 (`<timestamp>\n<METHOD>\n<path-with-query>\n<body>`)
+- `PARADIGM_SIGNER_HEADER`: the header the server puts each signing message in, base64
 - `PARADIGM_SIGNER_SIGNATURE`: the placeholder the server sends as
   `Paradigm-API-Signature`, for the proxy to replace
 
-Point `HTTPS_PROXY` at the proxy and `SSL_CERT_FILE` at its CA. The server
-sends REST and WebSocket requests through it and skips hosts in `NO_PROXY`.
-`PARADIGM_ACCESS_KEY` can hold a placeholder the proxy replaces. The server sends it
-in the `Authorization` header, and the WebSocket connection also sends it as the
-`api-key` query parameter.
-
-Every tool call returns a configuration error while either variable is missing,
-or when `PARADIGM_SIGNER_HEADER` names a header the server already sends. If
-`PARADIGM_SIGNING_KEY` is also set, the server logs a warning and uses the proxy.
-The desktop bundle and Smithery config take a signing key only.
+Every tool call fails while only one of the two is set. If `PARADIGM_SIGNING_KEY`
+is also set, the server logs a warning and uses the proxy.
 
 ## Run
 

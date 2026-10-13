@@ -87,7 +87,8 @@ tool surface to Claude Code / Claude Desktop / any MCP-aware client.
         │         ├──┤ EnvKeySigner            │  dev / local (shipped)
         │         ├──┤ ProxySigner             │  signing proxy (shipped)
         │         ├──┤ VaultTransitSigner      │  prod (planned)
-        │         └──┤ KMSGenerateMacSigner    │  prod (planned)
+        │         ├──┤ KMSGenerateMacSigner    │  prod (planned)
+        │         └──┤ SidecarHttpSigner       │  custom (planned)
         │            └──────────────────────────┘
         │
         └──►  Paradigm REST (api.prod.paradigm.trade or api.testnet.paradigm.trade)
@@ -258,11 +259,13 @@ class Signer(Protocol):
 - **`VaultTransitSigner`** (planned) — delegates to Vault Transit's
   `hmac/{key_name}/sha256`.
 - **`KMSGenerateMacSigner`** (planned) — AWS KMS `kms:GenerateMac`.
+- **`SidecarHttpSigner`** (planned) — POSTs the canonical message to a
+  local signing service.
 
 ### 5.2 Selection
 
 ```bash
-PARADIGM_SIGNING_DRIVER=env_key   # env_key | vault_transit | aws_kms
+PARADIGM_SIGNING_DRIVER=env_key   # env_key | vault_transit | aws_kms | sidecar
 ```
 
 `PARADIGM_SIGNER_HEADER` selects `ProxySigner` whatever the driver is.

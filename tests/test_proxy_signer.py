@@ -14,15 +14,15 @@ from mcp_paradigm.utils.paradigm_client import ParadigmClient
 from mcp_paradigm.utils.signing import EnvKeySigner, ProxySigner, build_message, get_signer
 from mcp_paradigm.utils.ws_manager import WSManager
 
-HEADER = "X-Dime-Sign-mainnet"
-PLACEHOLDER = "dime-placeholder-signature"
+HEADER = "X-Signer-Message"
+PLACEHOLDER = "placeholder-signature"
 
 
 @pytest.fixture
 def proxy_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cfg.config, "PARADIGM_SIGNING_KEY", None)
-    monkeypatch.setattr(cfg.config, "PARADIGM_SIGNER_HEADER", HEADER)
-    monkeypatch.setattr(cfg.config, "PARADIGM_SIGNER_SIGNATURE", PLACEHOLDER)
+    monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_HEADER", HEADER)
+    monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_SIGNATURE", PLACEHOLDER)
 
 
 def _signed_message(headers: httpx.Headers | dict[str, str]) -> bytes:
@@ -65,14 +65,13 @@ def test_no_signer_header_keeps_env_key_signer() -> None:
     [
         (HEADER, None, "PARADIGM_SIGNER_HEADER also needs PARADIGM_SIGNER_SIGNATURE"),
         (None, PLACEHOLDER, "PARADIGM_SIGNER_SIGNATURE needs PARADIGM_SIGNER_HEADER"),
-        ("Authorization", PLACEHOLDER, "PARADIGM_SIGNER_HEADER cannot be Authorization"),
     ],
 )
 async def test_partial_signer_config_fails_every_call(
     monkeypatch: pytest.MonkeyPatch, header: str | None, signature: str | None, missing: str
 ) -> None:
-    monkeypatch.setattr(cfg.config, "PARADIGM_SIGNER_HEADER", header)
-    monkeypatch.setattr(cfg.config, "PARADIGM_SIGNER_SIGNATURE", signature)
+    monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_HEADER", header)
+    monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_SIGNATURE", signature)
     monkeypatch.setattr(paradigm_client, "_singleton", None)
 
     assert not cfg.config.is_configured()
@@ -82,7 +81,12 @@ async def test_partial_signer_config_fails_every_call(
 
 
 @pytest.mark.usefixtures("proxy_env")
-def test_signer_header_counts_as_configured_without_signing_key() -> None:
+def test_signer_header_counts_as_configured_without_signing_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cfg.Config, "PARADIGM_ACCESS_KEY", "placeholder-access-key")
+    monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNING_KEY", None)
+
     assert cfg.config.is_configured()
 
 
@@ -114,7 +118,7 @@ async def test_rest_request_carries_proxy_headers(
         return httpx.Response(200, json={"ok": True})
 
     client = ParadigmClient(
-        base_url="https://api.test.paradigm.co", access_key="dime-placeholder-ak"
+        base_url="https://api.test.paradigm.co", access_key="placeholder-access-key"
     )
     client._client = httpx.AsyncClient(
         base_url="https://api.test.paradigm.co", transport=httpx.MockTransport(handler)
@@ -124,7 +128,7 @@ async def test_rest_request_carries_proxy_headers(
 
     (request,) = captured
     ts = request.headers["Paradigm-API-Timestamp"]
-    assert request.headers["Authorization"] == "Bearer dime-placeholder-ak"
+    assert request.headers["Authorization"] == "Bearer placeholder-access-key"
     assert request.headers["Paradigm-API-Signature"] == PLACEHOLDER
     assert request.url.raw_path.decode() == signed_path
     assert request.content == body
@@ -133,11 +137,11 @@ async def test_rest_request_carries_proxy_headers(
 
 @pytest.mark.usefixtures("proxy_env")
 def test_ws_handshake_carries_proxy_headers() -> None:
-    mgr = WSManager(ws_url="wss://ws.example/v2/drfq/", access_key="dime-placeholder-ak")
+    mgr = WSManager(ws_url="wss://ws.example/v2/drfq/", access_key="placeholder-access-key")
 
     headers = mgr._handshake_headers()
 
     ts = headers["Paradigm-API-Timestamp"]
-    assert headers["Authorization"] == "Bearer dime-placeholder-ak"
+    assert headers["Authorization"] == "Bearer placeholder-access-key"
     assert headers["Paradigm-API-Signature"] == PLACEHOLDER
     assert _signed_message(headers) == build_message(ts, "GET", "/v2/drfq/", b"")

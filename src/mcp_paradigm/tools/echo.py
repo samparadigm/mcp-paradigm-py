@@ -25,8 +25,8 @@ async def paradigm_echo(
     """Round-trip a payload through Paradigm's echo endpoint.
 
     The first call you should make after wiring up the server: a 200
-    response confirms your access key, signing key or signing proxy,
-    and base URL are all correct. GET form has no body; POST echoes back the payload.
+    response confirms your access key, signing key, and base URL are
+    all correct. GET form has no body; POST echoes back the payload.
     """
     client = await get_paradigm_client()
     if payload is None:
