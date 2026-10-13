@@ -85,9 +85,9 @@ tool surface to Claude Code / Claude Desktop / any MCP-aware client.
         │     Signing layer (pluggable)
         │         │  ┌──────────────────────────┐
         │         ├──┤ EnvKeySigner            │  dev / local (shipped)
+        │         ├──┤ ProxySigner             │  signing proxy (shipped)
         │         ├──┤ VaultTransitSigner      │  prod (planned)
-        │         ├──┤ KMSGenerateMacSigner    │  prod (planned)
-        │         └──┤ SidecarHttpSigner       │  custom (planned)
+        │         └──┤ KMSGenerateMacSigner    │  prod (planned)
         │            └──────────────────────────┘
         │
         └──►  Paradigm REST (api.prod.paradigm.trade or api.testnet.paradigm.trade)
@@ -212,8 +212,8 @@ for the HTTP transport).
 ### 4.2 Outbound (server → Paradigm)
 
 Bearer access key + HMAC signature triple. Computed by the Signer at
-the moment of each request — when running with Vault / KMS the
-signing key never lives in the agent process.
+the moment of each request — when running with a signing proxy, Vault
+or KMS the signing key never lives in the agent process.
 
 Canonical signing message:
 
@@ -243,25 +243,29 @@ Sent as `Paradigm-API-Signature` with `Paradigm-API-Timestamp`.
 from typing import Protocol
 
 class Signer(Protocol):
-    def sign(self, method: str, path: str, body_bytes: bytes) -> tuple[str, str]:
-        """Return (timestamp_ms_str, base64_signature)."""
+    def sign(self, method: str, path: str, body_bytes: bytes) -> dict[str, str]:
+        """Return the headers to send: Paradigm-API-Timestamp, Paradigm-API-Signature, and any extras."""
 ```
 
 ### 5.1 Reference implementations
 
 - **`EnvKeySigner`** (shipped) — reads `PARADIGM_SIGNING_KEY`, computes
   HMAC in-process. Dev / local only.
+- **`ProxySigner`** (shipped) — sends the canonical message, base64, in
+  the `PARADIGM_SIGNER_HEADER` header and `PARADIGM_SIGNER_SIGNATURE` as
+  the signature. A signing proxy on the request path (`HTTPS_PROXY`)
+  replaces the placeholder with the HMAC.
 - **`VaultTransitSigner`** (planned) — delegates to Vault Transit's
   `hmac/{key_name}/sha256`.
 - **`KMSGenerateMacSigner`** (planned) — AWS KMS `kms:GenerateMac`.
-- **`SidecarHttpSigner`** (planned) — POSTs the canonical message to a
-  local signing service.
 
 ### 5.2 Selection
 
 ```bash
-PARADIGM_SIGNING_DRIVER=env_key   # env_key | vault_transit | aws_kms | sidecar
+PARADIGM_SIGNING_DRIVER=env_key   # env_key | vault_transit | aws_kms
 ```
+
+`PARADIGM_SIGNER_HEADER` selects `ProxySigner` whatever the driver is.
 
 ---
 
@@ -287,7 +291,7 @@ mcp-paradigm-py/
 │   └── utils/
 │       ├── config.py               # env-driven config
 │       ├── errors.py               # typed exceptions
-│       ├── signing.py              # Signer protocol + EnvKeySigner
+│       ├── signing.py              # Signer protocol, EnvKeySigner, ProxySigner
 │       └── paradigm_client.py      # async REST client w/ signing
 ├── tests/
 │   ├── test_signing.py             # canonical-message vectors
@@ -308,6 +312,8 @@ mcp-paradigm-py/
 | `PARADIGM_WS_URL` | derived | Override WS URL |
 | `PARADIGM_ACCOUNT` | — | Optional multi-desk header |
 | `PARADIGM_SIGNING_DRIVER` | `env_key` | Selects Signer implementation |
+| `PARADIGM_SIGNER_HEADER` | — | Header for the signing message; selects `ProxySigner` |
+| `PARADIGM_SIGNER_SIGNATURE` | — | Placeholder signature the signing proxy replaces |
 | `PARADIGM_TIMEOUT` | `30` | HTTP timeout (seconds) |
 | `MCP_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
 | `MCP_PORT` | `3000` | HTTP transport port |

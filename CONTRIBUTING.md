@@ -12,7 +12,7 @@ git clone https://github.com/tradeparadigm/mcp-paradigm-py.git
 cd mcp-paradigm-py
 just install-dev      # pip install -e ".[dev]" + pre-commit install
 cp .env.template .env
-# fill in PARADIGM_ACCESS_KEY and PARADIGM_SIGNING_KEY
+# fill in PARADIGM_ACCESS_KEY and PARADIGM_SIGNING_KEY (or the signing proxy settings)
 ```
 
 ## Dev loop
@@ -87,7 +87,7 @@ src/mcp_paradigm/
 └── utils/
     ├── config.py         # env-driven config
     ├── errors.py         # typed exceptions
-    ├── signing.py        # Signer protocol + EnvKeySigner
+    ├── signing.py        # Signer protocol, EnvKeySigner, ProxySigner
     └── paradigm_client.py
 ```
 

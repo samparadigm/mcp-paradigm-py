@@ -89,10 +89,13 @@ def run_cli() -> None:
     )
     args = parser.parse_args()
 
-    if not config.is_configured():
+    signer_error = config.signer_config_error()
+    if signer_error:
+        logger.warning("%s; tools that call the Paradigm API will fail.", signer_error)
+    elif not config.is_configured():
         logger.warning(
-            "PARADIGM_ACCESS_KEY and PARADIGM_SIGNING_KEY are not both set; "
-            "tools that call the Paradigm API will fail until they are."
+            "Set PARADIGM_ACCESS_KEY and either PARADIGM_SIGNING_KEY or the signing proxy "
+            "settings; tools that call the Paradigm API will fail until then."
         )
 
     logger.info("Starting MCP Paradigm server (transport=%s)", args.transport)

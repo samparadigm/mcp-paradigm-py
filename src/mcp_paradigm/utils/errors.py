@@ -136,8 +136,9 @@ class ParadigmAuthError(ParadigmAPIError):
 
     def _hint(self) -> str:
         return (
-            "Check PARADIGM_ACCESS_KEY + PARADIGM_SIGNING_KEY (base64) "
-            "and PARADIGM_ENVIRONMENT; call paradigm_echo to verify."
+            "Check PARADIGM_ACCESS_KEY + PARADIGM_SIGNING_KEY (base64), or the "
+            "signing proxy (PARADIGM_SIGNER_HEADER), and PARADIGM_ENVIRONMENT; "
+            "call paradigm_echo to verify."
         )
 
 
