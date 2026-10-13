@@ -98,15 +98,8 @@ class ParadigmClient:
             content = body_bytes
             headers = {"Content-Type": "application/json"}
 
-        timestamp, signature = self.signer.sign(method, signed_path, body_bytes)
-
-        headers.update(
-            {
-                "Authorization": f"Bearer {self.access_key}",
-                "Paradigm-API-Timestamp": timestamp,
-                "Paradigm-API-Signature": signature,
-            }
-        )
+        headers["Authorization"] = f"Bearer {self.access_key}"
+        headers.update(self.signer.sign(method, signed_path, body_bytes))
         if config.PARADIGM_ACCOUNT:
             headers["Paradigm-Account"] = config.PARADIGM_ACCOUNT
 

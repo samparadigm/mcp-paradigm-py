@@ -50,6 +50,10 @@ class Config:
 
     SIGNING_DRIVER: str = os.getenv("PARADIGM_SIGNING_DRIVER", "env_key")
 
+    # Signing proxy: the proxy holds the key and replaces the placeholder signature.
+    PARADIGM_SIGNER_HEADER: str | None = _sanitize_env(os.getenv("PARADIGM_SIGNER_HEADER"))
+    PARADIGM_SIGNER_SIGNATURE: str | None = _sanitize_env(os.getenv("PARADIGM_SIGNER_SIGNATURE"))
+
     REQUEST_TIMEOUT_SECONDS: float = float(os.getenv("PARADIGM_TIMEOUT", "30"))
 
     WS_BUFFER_MAX_EVENTS: int = int(os.getenv("PARADIGM_WS_BUFFER", "1000"))
@@ -73,9 +77,32 @@ class Config:
             return cls.PARADIGM_FSPD_BASE_URL.rstrip("/")
         return _TEST_FSPD if cls.ENVIRONMENT == Environment.TESTNET else _PROD_FSPD
 
-    @classmethod
-    def is_configured(cls) -> bool:
-        return bool(cls.PARADIGM_ACCESS_KEY and cls.PARADIGM_SIGNING_KEY)
+    def signer_config_error(self) -> str | None:
+        """Name what is missing from the signing proxy settings, or None."""
+        if self.PARADIGM_SIGNER_HEADER and not self.PARADIGM_SIGNER_SIGNATURE:
+            return "PARADIGM_SIGNER_HEADER also needs PARADIGM_SIGNER_SIGNATURE"
+        if self.PARADIGM_SIGNER_SIGNATURE and not self.PARADIGM_SIGNER_HEADER:
+            return "PARADIGM_SIGNER_SIGNATURE needs PARADIGM_SIGNER_HEADER"
+        if self.PARADIGM_SIGNER_HEADER and self.PARADIGM_SIGNER_HEADER.lower() in _SENT_HEADERS:
+            return f"PARADIGM_SIGNER_HEADER cannot be {self.PARADIGM_SIGNER_HEADER}, the server sends it"
+        return None
 
+    def is_configured(self) -> bool:
+        if self.signer_config_error():
+            return False
+        return bool(
+            self.PARADIGM_ACCESS_KEY and (self.PARADIGM_SIGNING_KEY or self.PARADIGM_SIGNER_HEADER)
+        )
+
+
+_SENT_HEADERS = frozenset(
+    {
+        "authorization",
+        "content-type",
+        "paradigm-account",
+        "paradigm-api-signature",
+        "paradigm-api-timestamp",
+    }
+)
 
 config = Config()

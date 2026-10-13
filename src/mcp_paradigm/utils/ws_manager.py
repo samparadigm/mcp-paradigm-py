@@ -121,11 +121,9 @@ class WSManager:
             return {}
         signer = self._signer or get_signer()
         path = urlsplit(self._ws_url).path or "/"
-        timestamp, signature = signer.sign("GET", path, b"")
         return {
             "Authorization": f"Bearer {self._access_key}",
-            "Paradigm-API-Timestamp": timestamp,
-            "Paradigm-API-Signature": signature,
+            **signer.sign("GET", path, b""),
         }
 
     async def _ensure_connection(self) -> None:

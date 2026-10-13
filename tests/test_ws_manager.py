@@ -17,8 +17,11 @@ from mcp_paradigm.utils.ws_manager import CHANNELS, WSManager
 
 
 class _FakeSigner:
-    def sign(self, _method: str, _path: str, _body_bytes: bytes) -> tuple[str, str]:
-        return "1700000000000", "fake-signature"
+    def sign(self, _method: str, _path: str, _body_bytes: bytes) -> dict[str, str]:
+        return {
+            "Paradigm-API-Timestamp": "1700000000000",
+            "Paradigm-API-Signature": "fake-signature",
+        }
 
 
 class _FakeConn:

@@ -37,7 +37,8 @@ def test_build_message_layout() -> None:
 def test_env_key_signer_get() -> None:
     key_b64 = base64.b64encode(b"\x00" * 32).decode("ascii")
     signer = EnvKeySigner(signing_key_b64=key_b64)
-    ts, sig = signer.sign("GET", "/v2/drfq/echo/", b"")
+    headers = signer.sign("GET", "/v2/drfq/echo/", b"")
+    ts, sig = headers["Paradigm-API-Timestamp"], headers["Paradigm-API-Signature"]
     assert ts.isdigit() and len(ts) >= 13
     assert sig == _expected(key_b64, ts, "GET", "/v2/drfq/echo/", b"")
 
@@ -46,7 +47,8 @@ def test_env_key_signer_post_with_body() -> None:
     key_b64 = base64.b64encode(b"secret-key-bytes" * 2).decode("ascii")
     signer = EnvKeySigner(signing_key_b64=key_b64)
     body = b'{"hello":"world"}'
-    ts, sig = signer.sign("POST", "/v2/drfq/echo/", body)
+    headers = signer.sign("POST", "/v2/drfq/echo/", body)
+    ts, sig = headers["Paradigm-API-Timestamp"], headers["Paradigm-API-Signature"]
     assert sig == _expected(key_b64, ts, "POST", "/v2/drfq/echo/", body)
 
 
@@ -54,7 +56,8 @@ def test_env_key_signer_path_with_query() -> None:
     key_b64 = base64.b64encode(b"abcdefgh" * 4).decode("ascii")
     signer = EnvKeySigner(signing_key_b64=key_b64)
     path = "/v2/drfq/instruments/?venue=DBT&base_currency=BTC"
-    ts, sig = signer.sign("GET", path, b"")
+    headers = signer.sign("GET", path, b"")
+    ts, sig = headers["Paradigm-API-Timestamp"], headers["Paradigm-API-Signature"]
     assert sig == _expected(key_b64, ts, "GET", path, b"")
 
 

@@ -2,7 +2,7 @@
 
 The signing key never has to live in the agent process. Implementations
 of ``Signer`` may compute HMAC locally (``EnvKeySigner``) or delegate to
-Vault Transit, AWS KMS, or a sidecar HTTP signer. See ``DESIGN.md``.
+a signing proxy (``ProxySigner``), Vault Transit, or AWS KMS. See ``DESIGN.md``.
 
 Paradigm's signing message is the literal string::
 
@@ -16,21 +16,28 @@ from __future__ import annotations
 
 import base64
 import hmac
+import logging
 import time
 from hashlib import sha256
 from typing import Protocol
 
 from mcp_paradigm.utils.config import config
 
+logger = logging.getLogger(__name__)
+
+TIMESTAMP_HEADER = "Paradigm-API-Timestamp"
+SIGNATURE_HEADER = "Paradigm-API-Signature"
+
 
 class Signer(Protocol):
     """Sign a Paradigm REST request.
 
-    Returns ``(timestamp_ms_str, base64_signature)``. The timestamp must
-    be within 30s of Paradigm server time.
+    Returns the headers to send: at least ``Paradigm-API-Timestamp`` and
+    ``Paradigm-API-Signature``. The timestamp must be within 30s of
+    Paradigm server time.
     """
 
-    def sign(self, method: str, path: str, body_bytes: bytes) -> tuple[str, str]: ...
+    def sign(self, method: str, path: str, body_bytes: bytes) -> dict[str, str]: ...
 
 
 def build_message(timestamp_ms: str, method: str, path: str, body_bytes: bytes) -> bytes:
@@ -54,20 +61,57 @@ class EnvKeySigner:
             raise ValueError("PARADIGM_SIGNING_KEY is not set; cannot use EnvKeySigner.")
         self._key = base64.b64decode(key)
 
-    def sign(self, method: str, path: str, body_bytes: bytes) -> tuple[str, str]:
-        ts = str(int(time.time() * 1000))
+    def sign(self, method: str, path: str, body_bytes: bytes) -> dict[str, str]:
+        ts = _now_ms()
         msg = build_message(ts, method, path, body_bytes)
         digest = hmac.new(self._key, msg, sha256).digest()
-        return ts, base64.b64encode(digest).decode("ascii")
+        return {
+            TIMESTAMP_HEADER: ts,
+            SIGNATURE_HEADER: base64.b64encode(digest).decode("ascii"),
+        }
+
+
+class ProxySigner:
+    """Leaves the HMAC to a signing proxy that holds the key.
+
+    Sends the base64 signing message in ``header`` and ``placeholder`` as
+    the signature, for the proxy to replace with the real one.
+    """
+
+    def __init__(self, header: str, placeholder: str) -> None:
+        self._header = header
+        self._placeholder = placeholder
+
+    def sign(self, method: str, path: str, body_bytes: bytes) -> dict[str, str]:
+        ts = _now_ms()
+        msg = build_message(ts, method, path, body_bytes)
+        return {
+            TIMESTAMP_HEADER: ts,
+            SIGNATURE_HEADER: self._placeholder,
+            self._header: base64.b64encode(msg).decode("ascii"),
+        }
+
+
+def _now_ms() -> str:
+    return str(int(time.time() * 1000))
 
 
 def get_signer() -> Signer:
     """Resolve the configured Signer implementation.
 
-    Only ``env_key`` is currently shipped. Vault Transit / AWS KMS /
-    Sidecar implementations are listed in ``DESIGN.md`` and will be
-    added when the corresponding production backend is wired up.
+    ``PARADIGM_SIGNER_HEADER`` selects ``ProxySigner``. Otherwise
+    ``PARADIGM_SIGNING_DRIVER`` picks the driver; only ``env_key`` ships.
     """
+    error = config.signer_config_error()
+    if error:
+        raise ValueError(error)
+    if config.PARADIGM_SIGNER_HEADER and config.PARADIGM_SIGNER_SIGNATURE:
+        if config.PARADIGM_SIGNING_KEY:
+            logger.warning(
+                "PARADIGM_SIGNING_KEY is set but PARADIGM_SIGNER_HEADER selects the "
+                "signing proxy; the key is not used."
+            )
+        return ProxySigner(config.PARADIGM_SIGNER_HEADER, config.PARADIGM_SIGNER_SIGNATURE)
     driver = config.SIGNING_DRIVER.lower()
     if driver == "env_key":
         return EnvKeySigner()
