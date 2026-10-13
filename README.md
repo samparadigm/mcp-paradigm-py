@@ -70,6 +70,21 @@ To sign through a proxy that holds the signing key, set these two and leave
 Every tool call fails while only one of the two is set. If `PARADIGM_SIGNING_KEY`
 is also set, the server logs a warning and uses the proxy.
 
+We wrote this for iron-proxy, the signing proxy DIME Terminal runs in front of
+its agents. Another proxy has to do what iron-proxy does with these headers.
+For example, with `PARADIGM_SIGNER_HEADER=X-Dime-Sign-paradigm-mainnet-signing`,
+the server sends:
+
+```
+Paradigm-API-Timestamp: 1760000000000
+Paradigm-API-Signature: <PARADIGM_SIGNER_SIGNATURE>
+X-Dime-Sign-paradigm-mainnet-signing: base64("1760000000000\nGET\n/v2/drfq/rfqs/\n")
+```
+
+iron-proxy decodes `X-Dime-Sign-<label>`, signs it with HMAC-SHA256 using the key
+it holds for that label, swaps the base64 result in for the placeholder, and
+deletes the `X-Dime-Sign-<label>` header before forwarding the request.
+
 ## Run
 
 ```bash
