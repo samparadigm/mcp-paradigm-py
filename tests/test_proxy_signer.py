@@ -65,7 +65,7 @@ def test_no_signer_header_keeps_env_key_signer() -> None:
     [
         (HEADER, None, "PARADIGM_SIGNER_HEADER also needs PARADIGM_SIGNER_SIGNATURE"),
         (None, PLACEHOLDER, "PARADIGM_SIGNER_SIGNATURE needs PARADIGM_SIGNER_HEADER"),
-        ("paradigm-api-signature", PLACEHOLDER, "PARADIGM_SIGNER_HEADER cannot be"),
+        ("Authorization", PLACEHOLDER, "PARADIGM_SIGNER_HEADER cannot be Authorization"),
     ],
 )
 async def test_partial_signer_config_fails_every_call(
