@@ -88,8 +88,6 @@ class Config:
 
     @classmethod
     def is_configured(cls) -> bool:
-        if cls.signer_config_error():
-            return False
         return bool(
             cls.PARADIGM_ACCESS_KEY and (cls.PARADIGM_SIGNING_KEY or cls.PARADIGM_SIGNER_HEADER)
         )

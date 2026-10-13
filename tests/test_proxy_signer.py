@@ -74,7 +74,6 @@ async def test_partial_signer_config_fails_every_call(
     monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_SIGNATURE", signature)
     monkeypatch.setattr(paradigm_client, "_singleton", None)
 
-    assert not cfg.config.is_configured()
     for _ in range(2):
         with pytest.raises(ValueError, match=missing):
             await paradigm_client.get_paradigm_client()

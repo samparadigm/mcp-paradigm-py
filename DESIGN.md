@@ -254,8 +254,7 @@ class Signer(Protocol):
   HMAC in-process. Dev / local only.
 - **`ProxySigner`** (shipped) — sends the canonical message, base64, in
   the `PARADIGM_SIGNER_HEADER` header and `PARADIGM_SIGNER_SIGNATURE` as
-  the signature. A signing proxy on the request path (`HTTPS_PROXY`)
-  replaces the placeholder with the HMAC.
+  the signature, for a signing proxy to replace with the HMAC.
 - **`VaultTransitSigner`** (planned) — delegates to Vault Transit's
   `hmac/{key_name}/sha256`.
 - **`KMSGenerateMacSigner`** (planned) — AWS KMS `kms:GenerateMac`.
