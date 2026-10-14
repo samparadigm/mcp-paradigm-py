@@ -19,7 +19,7 @@ import hmac
 import logging
 import time
 from hashlib import sha256
-from typing import Protocol
+from typing import Protocol, cast
 
 from mcp_paradigm.utils.config import config
 
@@ -97,24 +97,24 @@ def _now_ms() -> str:
 
 
 def get_signer() -> Signer:
-    """Resolve the configured Signer implementation.
+    """Resolve the Signer that ``PARADIGM_SIGNING_DRIVER`` names.
 
-    ``PARADIGM_SIGNER_HEADER`` selects ``ProxySigner``. Otherwise
-    ``PARADIGM_SIGNING_DRIVER`` picks the driver; only ``env_key`` ships.
+    ``env_key`` and ``proxy`` ship.
     """
     error = config.signer_config_error()
     if error:
         raise ValueError(error)
-    if config.PARADIGM_SIGNER_HEADER and config.PARADIGM_SIGNER_SIGNATURE:
+    driver = config.SIGNING_DRIVER.lower()
+    if driver == "proxy":
         if config.PARADIGM_SIGNING_KEY:
             logger.warning(
-                "PARADIGM_SIGNING_KEY is set but PARADIGM_SIGNER_HEADER selects the "
-                "signing proxy; the key is not used."
+                "PARADIGM_SIGNING_KEY is set but PARADIGM_SIGNING_DRIVER=proxy; the key is not used."
             )
-        return ProxySigner(config.PARADIGM_SIGNER_HEADER, config.PARADIGM_SIGNER_SIGNATURE)
-    driver = config.SIGNING_DRIVER.lower()
+        return ProxySigner(
+            cast(str, config.PARADIGM_SIGNER_HEADER), cast(str, config.PARADIGM_SIGNER_SIGNATURE)
+        )
     if driver == "env_key":
         return EnvKeySigner()
     raise NotImplementedError(
-        f"Signing driver {driver!r} is not implemented; only 'env_key' is shipped."
+        f"Signing driver {driver!r} is not implemented; only 'env_key' and 'proxy' ship."
     )

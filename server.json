@@ -27,21 +27,28 @@
         },
         {
           "name": "PARADIGM_SIGNING_KEY",
-          "description": "Base64-encoded HMAC signing key issued by Paradigm. Required unless PARADIGM_SIGNER_HEADER is set.",
+          "description": "Base64-encoded HMAC signing key issued by Paradigm. Required unless PARADIGM_SIGNING_DRIVER is proxy.",
           "isRequired": false,
           "isSecret": true,
           "format": "string"
         },
         {
+          "name": "PARADIGM_SIGNING_DRIVER",
+          "description": "Signer: env_key (default) signs with PARADIGM_SIGNING_KEY; proxy signs through a signing proxy that holds the key.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
           "name": "PARADIGM_SIGNER_HEADER",
-          "description": "Signing proxy: header the server sends each signing message in, base64, for a proxy that holds the signing key. Needs PARADIGM_SIGNER_SIGNATURE.",
+          "description": "Signing proxy (PARADIGM_SIGNING_DRIVER=proxy): header the server sends each signing message in, base64, for a proxy that holds the signing key. Needs PARADIGM_SIGNER_SIGNATURE.",
           "isRequired": false,
           "isSecret": false,
           "format": "string"
         },
         {
           "name": "PARADIGM_SIGNER_SIGNATURE",
-          "description": "Signing proxy: placeholder the server sends as Paradigm-API-Signature, for the proxy to replace.",
+          "description": "Signing proxy (PARADIGM_SIGNING_DRIVER=proxy): placeholder the server sends as Paradigm-API-Signature, for the proxy to replace.",
           "isRequired": false,
           "isSecret": false,
           "format": "string"

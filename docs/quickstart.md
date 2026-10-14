@@ -32,7 +32,7 @@ export PARADIGM_ENVIRONMENT="testnet"
 ```
 
 To sign through a signing proxy, leave `PARADIGM_SIGNING_KEY` out and set
-`PARADIGM_SIGNER_HEADER` and `PARADIGM_SIGNER_SIGNATURE`. See
+`PARADIGM_SIGNING_DRIVER=proxy`, `PARADIGM_SIGNER_HEADER` and `PARADIGM_SIGNER_SIGNATURE`. See
 [Signing proxy](../README.md#signing-proxy-no-signing-key) in the README.
 
 Or copy `.env.template` to `.env` and fill in the same values —

@@ -252,7 +252,7 @@ class Signer(Protocol):
 
 - **`EnvKeySigner`** (shipped) — reads `PARADIGM_SIGNING_KEY`, computes
   HMAC in-process. Dev / local only.
-- **`ProxySigner`** (shipped) — sends the canonical message, base64, in
+- **`ProxySigner`** (shipped, `proxy`) — sends the canonical message, base64, in
   the `PARADIGM_SIGNER_HEADER` header and `PARADIGM_SIGNER_SIGNATURE` as
   the signature, for a signing proxy to replace with the HMAC.
 - **`VaultTransitSigner`** (planned) — delegates to Vault Transit's
@@ -264,10 +264,8 @@ class Signer(Protocol):
 ### 5.2 Selection
 
 ```bash
-PARADIGM_SIGNING_DRIVER=env_key   # env_key | vault_transit | aws_kms | sidecar
+PARADIGM_SIGNING_DRIVER=env_key   # env_key | proxy | vault_transit | aws_kms | sidecar
 ```
-
-`PARADIGM_SIGNER_HEADER` selects `ProxySigner` whatever the driver is.
 
 ---
 
@@ -314,8 +312,8 @@ mcp-paradigm-py/
 | `PARADIGM_WS_URL` | derived | Override WS URL |
 | `PARADIGM_ACCOUNT` | — | Optional multi-desk header |
 | `PARADIGM_SIGNING_DRIVER` | `env_key` | Selects Signer implementation |
-| `PARADIGM_SIGNER_HEADER` | — | Header for the signing message; selects `ProxySigner` |
-| `PARADIGM_SIGNER_SIGNATURE` | — | Placeholder signature the signing proxy replaces |
+| `PARADIGM_SIGNER_HEADER` | — | `proxy` driver: header for the signing message |
+| `PARADIGM_SIGNER_SIGNATURE` | — | `proxy` driver: placeholder signature the signing proxy replaces |
 | `PARADIGM_TIMEOUT` | `30` | HTTP timeout (seconds) |
 | `MCP_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
 | `MCP_PORT` | `3000` | HTTP transport port |

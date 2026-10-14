@@ -79,17 +79,23 @@ class Config:
 
     @classmethod
     def signer_config_error(cls) -> str | None:
-        """Name what is missing from the signing proxy settings, or None."""
-        if cls.PARADIGM_SIGNER_HEADER and not cls.PARADIGM_SIGNER_SIGNATURE:
-            return "PARADIGM_SIGNER_HEADER also needs PARADIGM_SIGNER_SIGNATURE"
-        if cls.PARADIGM_SIGNER_SIGNATURE and not cls.PARADIGM_SIGNER_HEADER:
-            return "PARADIGM_SIGNER_SIGNATURE needs PARADIGM_SIGNER_HEADER"
-        return None
+        """Name what is wrong with the signing proxy settings, or None."""
+        names = ("PARADIGM_SIGNER_HEADER", "PARADIGM_SIGNER_SIGNATURE")
+        if cls.SIGNING_DRIVER.lower() != "proxy":
+            stray = [n for n in names if getattr(cls, n)]
+            return (
+                f"{' and '.join(stray)} set without PARADIGM_SIGNING_DRIVER=proxy"
+                if stray
+                else None
+            )
+        missing = [n for n in names if not getattr(cls, n)]
+        return f"PARADIGM_SIGNING_DRIVER=proxy needs {' and '.join(missing)}" if missing else None
 
     @classmethod
     def is_configured(cls) -> bool:
         return bool(
-            cls.PARADIGM_ACCESS_KEY and (cls.PARADIGM_SIGNING_KEY or cls.PARADIGM_SIGNER_HEADER)
+            cls.PARADIGM_ACCESS_KEY
+            and (cls.PARADIGM_SIGNING_KEY or cls.SIGNING_DRIVER.lower() == "proxy")
         )
 
 

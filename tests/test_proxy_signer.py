@@ -1,4 +1,4 @@
-"""Signing through a proxy that holds the key: PARADIGM_SIGNER_HEADER mode."""
+"""Signing through a proxy that holds the key: PARADIGM_SIGNING_DRIVER=proxy."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ PLACEHOLDER = "placeholder-signature"
 @pytest.fixture
 def proxy_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cfg.config, "PARADIGM_SIGNING_KEY", None)
+    monkeypatch.setattr(cfg.Config, "SIGNING_DRIVER", "proxy")
     monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_HEADER", HEADER)
     monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_SIGNATURE", PLACEHOLDER)
 
@@ -39,12 +40,12 @@ def test_proxy_signer_sends_message_and_placeholder() -> None:
 
 
 @pytest.mark.usefixtures("proxy_env")
-def test_signer_header_selects_proxy_signer() -> None:
+def test_proxy_driver_selects_proxy_signer() -> None:
     assert isinstance(get_signer(), ProxySigner)
 
 
 @pytest.mark.usefixtures("proxy_env")
-def test_signing_key_with_signer_header_warns_and_uses_proxy(
+def test_signing_key_with_proxy_driver_warns_and_uses_proxy(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     monkeypatch.setattr(cfg.config, "PARADIGM_SIGNING_KEY", base64.b64encode(b"k" * 32).decode())
@@ -56,20 +57,31 @@ def test_signing_key_with_signer_header_warns_and_uses_proxy(
     assert "PARADIGM_SIGNING_KEY is set" in caplog.text
 
 
-def test_no_signer_header_keeps_env_key_signer() -> None:
+def test_default_driver_keeps_env_key_signer() -> None:
     assert isinstance(get_signer(), EnvKeySigner)
 
 
 @pytest.mark.parametrize(
-    ("header", "signature", "missing"),
+    ("driver", "header", "signature", "missing"),
     [
-        (HEADER, None, "PARADIGM_SIGNER_HEADER also needs PARADIGM_SIGNER_SIGNATURE"),
-        (None, PLACEHOLDER, "PARADIGM_SIGNER_SIGNATURE needs PARADIGM_SIGNER_HEADER"),
+        ("proxy", HEADER, None, "PARADIGM_SIGNING_DRIVER=proxy needs PARADIGM_SIGNER_SIGNATURE$"),
+        ("proxy", None, PLACEHOLDER, "PARADIGM_SIGNING_DRIVER=proxy needs PARADIGM_SIGNER_HEADER$"),
+        (
+            "env_key",
+            HEADER,
+            None,
+            "PARADIGM_SIGNER_HEADER set without PARADIGM_SIGNING_DRIVER=proxy",
+        ),
     ],
 )
-async def test_partial_signer_config_fails_every_call(
-    monkeypatch: pytest.MonkeyPatch, header: str | None, signature: str | None, missing: str
+async def test_bad_signer_config_fails_every_call(
+    monkeypatch: pytest.MonkeyPatch,
+    driver: str,
+    header: str | None,
+    signature: str | None,
+    missing: str,
 ) -> None:
+    monkeypatch.setattr(cfg.Config, "SIGNING_DRIVER", driver)
     monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_HEADER", header)
     monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_SIGNATURE", signature)
     monkeypatch.setattr(paradigm_client, "_singleton", None)
@@ -80,7 +92,7 @@ async def test_partial_signer_config_fails_every_call(
 
 
 @pytest.mark.usefixtures("proxy_env")
-def test_signer_header_counts_as_configured_without_signing_key(
+def test_proxy_driver_counts_as_configured_without_signing_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(cfg.Config, "PARADIGM_ACCESS_KEY", "placeholder-access-key")

@@ -27,5 +27,6 @@ def _paradigm_env(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(cfg.config, "PARADIGM_ACCESS_KEY", "ak_test")
     monkeypatch.setattr(cfg.config, "PARADIGM_SIGNING_KEY", key_b64)
     monkeypatch.setattr(cfg.config, "ENVIRONMENT", "testnet")
+    monkeypatch.setattr(cfg.Config, "SIGNING_DRIVER", "env_key")
     monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_HEADER", None)
     monkeypatch.setattr(cfg.Config, "PARADIGM_SIGNER_SIGNATURE", None)

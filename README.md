@@ -60,19 +60,21 @@ export PARADIGM_ENVIRONMENT="testnet"    # "prod" (default) or "testnet"
 
 ### Signing proxy (no signing key)
 
-To sign through a proxy that holds the signing key, set these two and leave
-`PARADIGM_SIGNING_KEY` unset:
+To sign through a proxy that holds the signing key, set
+`PARADIGM_SIGNING_DRIVER=proxy` and these two, and leave `PARADIGM_SIGNING_KEY` unset:
 
 - `PARADIGM_SIGNER_HEADER`: the header the server puts each signing message in, base64
 - `PARADIGM_SIGNER_SIGNATURE`: the placeholder the server sends as
   `Paradigm-API-Signature`, for the proxy to replace
 
-Every tool call fails while only one of the two is set. If `PARADIGM_SIGNING_KEY`
-is also set, the server logs a warning and uses the proxy.
+Every tool call fails while either is missing, or while either is set with
+another driver. If `PARADIGM_SIGNING_KEY` is also set, the server logs a warning
+and uses the proxy.
 
 We wrote this for iron-proxy, the signing proxy DIME Terminal runs in front of
 its agents. Another proxy has to do what iron-proxy does with these headers.
-For example, with `PARADIGM_SIGNER_HEADER=X-Dime-Sign-paradigm-mainnet-signing`,
+For example, with `PARADIGM_SIGNING_DRIVER=proxy` and
+`PARADIGM_SIGNER_HEADER=X-Dime-Sign-paradigm-mainnet-signing`,
 the server sends:
 
 ```
